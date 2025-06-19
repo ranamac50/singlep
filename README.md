@@ -1,0 +1,2 @@
+# singlep
+singlepage document
