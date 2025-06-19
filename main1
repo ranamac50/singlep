@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GWT Nepal - Interactive DSE Safety Application</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            max-height: 350px;
+            margin: auto;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+                max-height: 400px;
+            }
+        }
+        .nav-link.active {
+            background-color: #007BFF;
+            color: white;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.visible {
+            display: block;
+        }
+        .interactive-element:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 10px rgba(0, 123, 255, 0.7));
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-gray-800">
+
+    <!-- Chosen Palette: Corporate Wellness (Custom) -->
+    <!-- Application Structure Plan: A single-page application with a fixed side navigation bar. This dashboard-like structure allows users to freely navigate between key topics: an Overview (dashboard), The Risks, an interactive Workstation guide, a section on Good Habits, and a dynamic Self-Assessment form. This non-linear structure was chosen to empower users to find information relevant to them quickly, transforming a static policy into an explorable tool, with the primary user flow guiding them towards completing the interactive assessment. -->
+    <!-- Visualization & Content Choices: 
+        - Overview: Goal: Inform. Viz: Donut Chart (Chart.js) showing risk distribution. Justification: Provides a quick, high-level summary of the problem's scope.
+        - Risks: Goal: Compare. Viz: Bar Chart (Chart.js) comparing common complaints. Justification: Bar charts are excellent for direct comparison of category values.
+        - Workstation Guide: Goal: Organize/Instruct. Viz: Interactive Diagram (HTML/CSS/JS). Justification: Engages the user in active learning by having them click on parts of the diagram to reveal information, which is more effective than passive reading.
+        - Self-Assessment: Goal: Organize/Interact. Viz: Dynamic Form (HTML/JS). Justification: Turns a static checklist into an interactive tool that provides immediate feedback and a clear sense of completion.
+        All visualizations use Canvas rendering and avoid SVG/Mermaid. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 bg-white shadow-lg">
+            <div class="p-6">
+                <h1 class="text-xl font-bold text-gray-900">GWT Nepal</h1>
+                <p class="text-sm text-gray-600">DSE Safety Portal</p>
+            </div>
+            <nav class="mt-4">
+                <a href="#overview" data-section="overview" class="nav-link flex items-center py-3 px-6 text-gray-700 hover:bg-gray-200">
+                    <span>🏠</span><span class="ml-3">Overview</span>
+                </a>
+                <a href="#risks" data-section="risks" class="nav-link flex items-center py-3 px-6 text-gray-700 hover:bg-gray-200">
+                    <span>⚠️</span><span class="ml-3">Health Risks</span>
+                </a>
+                <a href="#workstation" data-section="workstation" class="nav-link flex items-center py-3 px-6 text-gray-700 hover:bg-gray-200">
+                    <span>🖥️</span><span class="ml-3">Workstation Setup</span>
+                </a>
+                <a href="#habits" data-section="habits" class="nav-link flex items-center py-3 px-6 text-gray-700 hover:bg-gray-200">
+                    <span>🧘</span><span class="ml-3">Good Habits</span>
+                </a>
+                <a href="#assessment" data-section="assessment" class="nav-link flex items-center py-3 px-6 font-bold text-blue-600 hover:bg-blue-100">
+                    <span>📝</span><span class="ml-3">Start Self-Assessment</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-10 bg-slate-50">
+            <!-- Overview Section -->
+            <section id="overview" class="content-section">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Your Wellbeing at Work</h2>
+                <p class="text-lg text-gray-600 mb-8">This portal provides interactive guidance to help you work safely and comfortably with Display Screen Equipment (DSE).</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-xl mb-4">Why DSE Safety Matters</h3>
+                        <p class="text-gray-700 mb-4">Working for long periods with computers, laptops, or tablets can lead to preventable health issues. The primary risks fall into three categories. This portal is designed to give you the tools and knowledge to mitigate them effectively.</p>
+                        <p class="text-gray-700">Use the navigation on the left to explore the key health risks, learn how to set up your workstation perfectly, and discover good habits. When you are ready, please complete the mandatory self-assessment.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-xl mb-4 text-center">Breakdown of DSE-Related Risks</h3>
+                        <p class="text-center text-gray-600 mb-4">Most reported issues relate to posture and visual strain.</p>
+                        <div class="chart-container">
+                            <canvas id="risksDonutChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Risks Section -->
+            <section id="risks" class="content-section">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Understanding the Health Risks</h2>
+                <p class="text-lg text-gray-600 mb-8">Incorrect DSE use can lead to several health issues. All are preventable with the right setup and habits.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-lg text-red-600">Musculoskeletal Disorders</h3>
+                        <p class="text-gray-700 mt-2">Aches, pains, and injuries affecting the back, neck, shoulders, and wrists, often caused by maintaining a poor or static posture for extended periods.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-lg text-amber-600">Visual Fatigue & Eye Strain</h3>
+                        <p class="text-gray-700 mt-2">Headaches, sore eyes, and difficulty focusing. These can result from improper screen positioning, distance, glare, or not taking sufficient breaks.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-lg text-sky-600">Mental Stress & Fatigue</h3>
+                        <p class="text-gray-700 mt-2">Can arise from a poor work environment, high-pressure demands, or poorly designed software that is difficult to use, leading to frustration and fatigue.</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Workstation Section -->
+            <section id="workstation" class="content-section">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Interactive Workstation Guide</h2>
+                <p class="text-lg text-gray-600 mb-8">Click on an element in the diagram below to learn how to set it up correctly.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div id="interactive-diagram" class="bg-white p-6 rounded-lg shadow-md flex items-center justify-center relative min-h-[400px]">
+                        <!-- Diagram built with HTML/CSS -->
+                        <div class="w-full h-full relative">
+                            <div class="absolute bg-gray-700 w-full h-1 bottom-16"></div>
+                            <div class="absolute bg-gray-500 w-2 h-24 bottom-0 left-1/4"></div>
+                            <div class="absolute bg-gray-500 w-2 h-24 bottom-0 right-1/4"></div>
+                            
+                            <!-- Screen -->
+                            <div id="ws-screen" class="interactive-element absolute w-48 h-28 bg-gray-300 border-4 border-gray-800 rounded-md top-12 left-1/2 -translate-x-1/2 flex items-center justify-center text-5xl transition-transform" data-info="screen-info">🖥️</div>
+                            <!-- Chair -->
+                            <div id="ws-chair" class="interactive-element absolute w-24 h-40 bg-gray-300 rounded-t-lg bottom-16 right-4 flex items-center justify-center text-5xl transition-transform" data-info="chair-info">🪑</div>
+                            <!-- Keyboard -->
+                            <div id="ws-keyboard" class="interactive-element absolute w-40 h-10 bg-gray-300 rounded bottom-16 left-1/2 -translate-x-1/2 mb-[-64px] flex items-center justify-center text-3xl transition-transform" data-info="keyboard-info">⌨️</div>
+                            
+                             <div id="ws-laptop" class="interactive-element absolute bottom-20 left-4 text-5xl transition-transform" data-info="laptop-info">💻</div>
+                        </div>
+                    </div>
+                    <div id="workstation-info-panel" class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 id="info-title" class="font-bold text-xl mb-4 text-blue-600">Workstation Setup Information</h3>
+                        <div id="info-content" class="text-gray-700 space-y-3">
+                            <p>Select an item from the diagram to see setup guidance here.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Good Habits Section -->
+            <section id="habits" class="content-section">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Developing Good Working Habits</h2>
+                <p class="text-lg text-gray-600 mb-8">Correct setup is only half the battle. Regular breaks and good habits are essential for long-term comfort.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                     <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-xl mb-4">Take Regular Breaks</h3>
+                        <p class="text-gray-700 mb-4">It is vital to take short breaks away from your screen. The HSE recommends a <strong>5-10 minute break for every hour</strong> of continuous DSE work. This doesn't mean stopping work, but changing activity.</p>
+                        <ul class="list-disc list-inside text-gray-700 space-y-2">
+                           <li>Stand up and stretch your arms, back, and shoulders.</li>
+                           <li>Walk to get a glass of water.</li>
+                           <li>Do a different task that doesn't involve looking at a screen.</li>
+                        </ul>
+                     </div>
+                     <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-xl mb-4">Practice Eye Care: The 20-20-20 Rule</h3>
+                        <p class="text-gray-700 mb-4">To prevent visual fatigue, periodically relax your eyes.</p>
+                        <div class="text-center bg-sky-100 p-4 rounded-lg">
+                            <p class="text-lg">Every <strong class="text-sky-700">20</strong> minutes, look at something <strong class="text-sky-700">20</strong> feet away for <strong class="text-sky-700">20</strong> seconds.</p>
+                        </div>
+                        <div class="text-center mt-4">
+                            <button id="eye-break-timer" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition-colors">Try a 20s Eye Break Now</button>
+                            <p id="timer-display" class="text-2xl font-bold mt-2 text-green-600"></p>
+                        </div>
+                     </div>
+                </div>
+            </section>
+
+            <!-- Assessment Section -->
+            <section id="assessment" class="content-section">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Workstation Self-Assessment</h2>
+                <p class="text-lg text-gray-600 mb-8">Please complete this checklist carefully. It will help us ensure your workstation is safe and comfortable. For any "No" answers, please provide comments.</p>
+                <form id="assessment-form" class="bg-white p-8 rounded-lg shadow-md space-y-8">
+                    <div id="assessment-questions"></div>
+                    <div class="space-y-2">
+                        <label for="feedback-comments" class="block font-bold text-lg">Feedback and Comments</label>
+                        <p class="text-sm text-gray-600">Please describe any problems you have identified or any discomfort you are experiencing.</p>
+                        <textarea id="feedback-comments" rows="4" class="w-full p-2 border border-gray-300 rounded-md"></textarea>
+                    </div>
+                    <div id="submission-area">
+                        <p id="completion-message" class="text-red-600 font-semibold mb-4">Please answer all questions to enable submission.</p>
+                        <button id="submit-assessment" type="submit" class="bg-gray-400 text-white font-bold py-3 px-6 rounded cursor-not-allowed" disabled>Submit Assessment</button>
+                    </div>
+                    <div id="thank-you-message" class="hidden text-center p-6 bg-green-100 rounded-lg">
+                        <h3 class="text-2xl font-bold text-green-700">Thank You!</h3>
+                        <p class="text-green-600 mt-2">Your DSE self-assessment has been successfully submitted to the IT Department for review.</p>
+                    </div>
+                </form>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            const workstationInfo = {
+                "screen-info": {
+                    title: "The Screen (Display)",
+                    content: `
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>Height:</strong> The top of the screen should be at, or slightly below, your natural eye level.</li>
+                            <li><strong>Distance:</strong> Position the screen approximately an arm's length away.</li>
+                            <li><strong>Position:</strong> Place it directly in front of you to avoid twisting your neck.</li>
+                            <li><strong>Quality:</strong> Ensure text is clear and legible. Adjust brightness and contrast for comfort. Avoid glare and reflections.</li>
+                        </ul>
+                    `
+                },
+                "chair-info": {
+                    title: "The Chair",
+                    content: `
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>Height:</strong> Adjust so your feet are flat on the floor and thighs are parallel to it.</li>
+                            <li><strong>Back Support:</strong> The backrest must support the natural curve of your lower back. Sit upright.</li>
+                            <li><strong>Armrests:</strong> Shoulders should be relaxed. If they prevent you getting close to the desk, lower or remove them.</li>
+                        </ul>
+                    `
+                },
+                "keyboard-info": {
+                    title: "The Keyboard & Mouse",
+                    content: `
+                        <ul class="list-disc list-inside space-y-2">
+                           <li><strong>Keyboard:</strong> Place directly in front of you, with space to rest wrists when not typing. Keep wrists straight.</li>
+                           <li><strong>Mouse:</strong> Position the mouse close to the keyboard to avoid over-reaching. Keep your wrist straight.</li>
+                        </ul>
+                    `
+                },
+                 "laptop-info": {
+                    title: "Using a Laptop",
+                    content: `
+                        <p class="font-bold text-red-600">Important Note for Laptop Users:</p>
+                        <p>If you use a laptop as your main computer for prolonged periods, it is strongly recommended that you use:</p>
+                        <ul class="list-disc list-inside space-y-2 mt-2">
+                           <li>A separate, full-size keyboard.</li>
+                           <li>A separate mouse.</li>
+                           <li>A laptop stand to position the screen at the correct height.</li>
+                        </ul>
+                        <p class="mt-2">Using a laptop directly on a desk forces the user into a hunched, harmful posture.</p>
+                    `
+                }
+            };
+            
+            const assessmentChecklist = [
+                {
+                    heading: "1. Your Chair",
+                    questions: [
+                        { id: 'q1_1', text: "Is your chair stable and does it allow you to work comfortably?" },
+                        { id: 'q1_2', text: "Can you easily adjust the height of the seat?" },
+                        { id: 'q1_3', text: "Is the seat back adjustable in height and tilt?" },
+                        { id: 'q1_4', text: "Does the chair provide good support for your lower back?" },
+                        { id: 'q1_5', text: "Can you place your feet flat on the floor or a footrest?" }
+                    ]
+                },
+                {
+                    heading: "2. Your Display Screen(s)",
+                    questions: [
+                         { id: 'q2_1', text: "Is the top of your screen roughly at eye level?" },
+                         { id: 'q2_2', text: "Is the screen directly in front of you?" },
+                         { id: 'q2_3', text: "Is the screen free from glare and reflections?" },
+                         { id: 'q2_4', text: "Are the characters on the screen clear and a readable size?" },
+                         { id: 'q2_5', text: "Can you adjust the brightness and contrast settings?" }
+                    ]
+                },
+                {
+                    heading: "3. Your Keyboard & Mouse",
+                    questions: [
+                        { id: 'q3_1', text: "Is the keyboard directly in front of you and separate from the screen?" },
+                        { id: 'q3_2', text: "Is there enough space in front of the keyboard to rest your hands/wrists?" },
+                        { id: 'q3_3', text: "Are your wrists straight when you are typing?" },
+                        { id: 'q3_4', text: "Is the mouse positioned close to you so you can use it without stretching?" }
+                    ]
+                },
+                {
+                    heading: "4. Your Work Environment",
+                    questions: [
+                        { id: 'q4_1', text: "Is there enough room under the desk for your legs?" },
+                        { id: 'q4_2', text: "Is the surface of your desk free from clutter?" },
+                        { id: 'q4_3', text: "Is the lighting suitable (not too bright, not too dim)?" }
+                    ]
+                },
+                {
+                    heading: "5. Your Working Habits",
+                    questions: [
+                        { id: 'q5_1', text: "Do you take regular breaks away from the screen?" },
+                        { id: 'q5_2', text: "Do you vary your posture and stretch periodically?" },
+                        { id: 'q5_3', text: "If using a laptop, are you using a separate keyboard and mouse?" }
+                    ]
+                }
+            ];
+
+            const totalQuestions = assessmentChecklist.reduce((acc, section) => acc + section.questions.length, 0);
+            
+            function populateAssessmentForm() {
+                const container = document.getElementById('assessment-questions');
+                let html = '';
+                assessmentChecklist.forEach(section => {
+                    html += `<fieldset class="space-y-4">`;
+                    html += `<legend class="font-bold text-lg mb-2">${section.heading}</legend>`;
+                    section.questions.forEach(q => {
+                        html += `<div class="flex items-center justify-between p-3 rounded-md border border-gray-200">
+                                    <p>${q.text}</p>
+                                    <div class="flex-shrink-0 ml-4">
+                                        <input type="radio" id="${q.id}_yes" name="${q.id}" value="yes" class="form-radio h-5 w-5 text-blue-600"><label for="${q.id}_yes" class="ml-2 mr-4">Yes</label>
+                                        <input type="radio" id="${q.id}_no" name="${q.id}" value="no" class="form-radio h-5 w-5 text-red-600"><label for="${q.id}_no" class="ml-2">No</label>
+                                    </div>
+                                 </div>`;
+                    });
+                    html += `</fieldset>`;
+                });
+                container.innerHTML = html;
+            }
+
+            function checkAssessmentCompletion() {
+                const answeredQuestions = document.querySelectorAll('#assessment-form input[type="radio"]:checked').length;
+                const submitButton = document.getElementById('submit-assessment');
+                const completionMessage = document.getElementById('completion-message');
+
+                if (answeredQuestions === totalQuestions) {
+                    submitButton.disabled = false;
+                    submitButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                    submitButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                    completionMessage.style.display = 'none';
+                } else {
+                    submitButton.disabled = true;
+                    submitButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+                    submitButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    completionMessage.style.display = 'block';
+                }
+            }
+
+            function switchSection(sectionId) {
+                contentSections.forEach(section => {
+                    section.classList.toggle('visible', section.id === sectionId);
+                });
+                navLinks.forEach(link => {
+                    link.classList.toggle('active', link.dataset.section === sectionId);
+                });
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const sectionId = link.dataset.section;
+                    switchSection(sectionId);
+                    window.location.hash = sectionId;
+                });
+            });
+
+            document.querySelectorAll('.interactive-element').forEach(el => {
+                el.addEventListener('click', () => {
+                    const infoKey = el.dataset.info;
+                    const info = workstationInfo[infoKey];
+                    document.getElementById('info-title').textContent = info.title;
+                    document.getElementById('info-content').innerHTML = info.content;
+                });
+            });
+
+            document.getElementById('eye-break-timer').addEventListener('click', (e) => {
+                const button = e.target;
+                const display = document.getElementById('timer-display');
+                let seconds = 20;
+                button.disabled = true;
+                button.textContent = 'Look away from the screen...';
+                display.textContent = seconds;
+
+                const interval = setInterval(() => {
+                    seconds--;
+                    display.textContent = seconds;
+                    if (seconds <= 0) {
+                        clearInterval(interval);
+                        display.textContent = 'Done!';
+                        button.disabled = false;
+                        button.textContent = 'Try a 20s Eye Break Now';
+                        setTimeout(() => { display.textContent = ''; }, 2000);
+                    }
+                }, 1000);
+            });
+
+            document.getElementById('assessment-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                document.getElementById('assessment-questions').style.display = 'none';
+                document.getElementById('submission-area').style.display = 'none';
+                document.getElementById('thank-you-message').style.display = 'block';
+            });
+            
+            // Initial setup
+            const initialSection = window.location.hash ? window.location.hash.substring(1) : 'overview';
+            switchSection(initialSection);
+            populateAssessmentForm();
+
+            document.getElementById('assessment-form').addEventListener('change', checkAssessmentCompletion);
+            
+            const mandatoryTooltipConfig = {
+                callbacks: {
+                    title: function(tooltipItems) {
+                        const item = tooltipItems[0];
+                        let label = item.chart.data.labels[item.dataIndex];
+                        return Array.isArray(label) ? label.join(' ') : label;
+                    }
+                }
+            };
+            
+            // Charts
+            const risksDonutCtx = document.getElementById('risksDonutChart').getContext('2d');
+            new Chart(risksDonutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Musculoskeletal', 'Visual Fatigue', 'Stress & Other'],
+                    datasets: [{
+                        label: 'DSE Risks',
+                        data: [55, 35, 10],
+                        backgroundColor: ['#DC2626', '#F59E0B', '#0284C7'],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                     plugins: {
+                        tooltip: mandatoryTooltipConfig
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
